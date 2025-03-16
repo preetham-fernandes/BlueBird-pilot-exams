@@ -1,20 +1,21 @@
-// src/app/login/page.tsx
+// src/app/register/page.tsx
 'use client';
 
 import { useState } from 'react';
-import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
+import { signIn } from 'next-auth/react';
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -23,22 +24,35 @@ export default function LoginPage() {
     setIsLoading(true);
     setError('');
 
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const result = await signIn('credentials', {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      // Sign in the user after successful registration
+      await signIn('credentials', {
         redirect: false,
         email,
         password,
       });
 
-      if (result?.error) {
-        setError('Invalid email or password');
-        setIsLoading(false);
-        return;
-      }
-
       router.push('/dashboard');
-    } catch (error) {
-      setError('An error occurred. Please try again.');
+    } catch (error: any) {
+      setError(error.message || 'Registration failed');
       setIsLoading(false);
     }
   };
@@ -51,13 +65,23 @@ export default function LoginPage() {
     <div className="flex justify-center items-center min-h-[80vh]">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Sign In</CardTitle>
+          <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
           <CardDescription>
-            Enter your credentials to access your account
+            Enter your details to register
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input
+                id="name"
+                placeholder="John Doe"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -70,12 +94,7 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <div className="flex justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
-                  Forgot password?
-                </Link>
-              </div>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -84,16 +103,26 @@ export default function LoginPage() {
                 required
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+            </div>
             {error && <p className="text-red-500 text-sm">{error}</p>}
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? 'Creating account...' : 'Register'}
             </Button>
           </form>
 
           <div className="my-4 flex items-center">
-            <Separator className="flex-grow" />
+            <div className="flex-grow h-px bg-gray-200"></div>
             <span className="mx-4 text-sm text-gray-500">OR</span>
-            <Separator className="flex-grow" />
+            <div className="flex-grow h-px bg-gray-200"></div>
           </div>
 
           <Button
@@ -108,14 +137,14 @@ export default function LoginPage() {
               <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
               <path fill="currentColor" d="M1 1h22v22H1z" />
             </svg>
-            Sign in with Google
+            Sign up with Google
           </Button>
         </CardContent>
         <CardFooter>
           <p className="text-center text-sm w-full">
-            Don't have an account?{" "}
-            <Link href="/register" className="text-blue-600 hover:underline">
-              Sign up
+            Already have an account?{" "}
+            <Link href="/login" className="text-blue-600 hover:underline">
+              Sign in
             </Link>
           </p>
         </CardFooter>

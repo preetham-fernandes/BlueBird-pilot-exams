@@ -5,10 +5,11 @@ import {
   primaryKey as pk, text, mysqlEnum as mysqlEnum 
 } from 'drizzle-orm/mysql-core';
 import { sql } from 'drizzle-orm';
+import { v4 as uuidv4 } from "uuid";
 
 // Users table
 export const users = mysqlTable('users', {
-  id: varchar('id', { length: 36 }).primaryKey().default(sql`(UUID())`),
+  id: varchar('id', { length: 36 }).primaryKey().$defaultFn(() => uuidv4()), // Uses JS-generated UUID
   name: varchar('name', { length: 255 }),
   email: varchar('email', { length: 255 }).notNull().unique(),
   emailVerified: datetime('email_verified'),
